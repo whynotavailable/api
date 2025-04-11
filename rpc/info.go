@@ -1,14 +1,12 @@
 package rpc
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"reflect"
 )
 
 // This will be used to generate and deal with function metadata.
-
-type AnyMap = map[string]any
 
 type FunctionInfo struct {
 	Body any
@@ -102,5 +100,10 @@ func translateKind(kind string) string {
 }
 
 func (container *RpcContainer) ServeInfo(w http.ResponseWriter) {
-	fmt.Fprint(w, "ok")
+	data, err := json.Marshal(container.docs)
+	if err != nil {
+		response := ErrorResponseStatus(err, http.StatusInternalServerError)
+		response.Write(w)
+	}
+	w.Write(data)
 }

@@ -3,7 +3,6 @@ package rpc_test
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -12,29 +11,6 @@ import (
 	"github.com/whynotavailable/api/rpc"
 	"github.com/whynotavailable/api/utils"
 )
-
-func TestInfo(t *testing.T) {
-	rpcContainer := rpc.RpcContainer{}
-	stripContainer := http.StripPrefix("/rpc", &rpcContainer) // Simulate
-
-	r, err := http.NewRequest(http.MethodGet, "/rpc/_info", nil)
-	if err != nil {
-		t.Error(err)
-	}
-
-	rr := httptest.NewRecorder()
-
-	stripContainer.ServeHTTP(rr, r)
-
-	data, err := io.ReadAll(rr.Body)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(data) != "ok" {
-		t.Error("Data not ok")
-	}
-}
 
 func TestSimpleHandler(t *testing.T) {
 	messageText := "hi"

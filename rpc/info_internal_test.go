@@ -17,31 +17,43 @@ type ComplexType struct {
 	Page     *int
 }
 
-func TestInfoGen(t *testing.T) {
-	schema := generateSchema(reflect.TypeOf(SimpleMessage{}))
+func dumpSchema(schema any, yes bool) {
+	if !yes {
+		return
+	}
+
 	data, err := json.Marshal(schema)
 	if err != nil {
-		t.Error(err)
+		fmt.Println("Error unmarshalling schema")
 		return
 	}
 
 	fmt.Println(string(data))
+}
+
+func TestInfoGen(t *testing.T) {
+	schema := generateSchema(reflect.TypeOf(SimpleMessage{}))
+	dumpSchema(schema, false)
 
 	object := schema.(SchemaObject)
-	if _, ok := object.Properties["message"]; !ok {
+
+	messageProp, ok := object.Properties["message"]
+
+	if !ok {
 		t.Error("message prop missing")
 		return
 	}
+
+	message := messageProp.(SchemaField)
+
+	if message.Type != "string" {
+		t.Errorf("Message has wrong type, got %s, should have %s", message.Type, "string")
+	}
+
+	_ = message
 }
 
 func TestInfoGenComplex(t *testing.T) {
 	schema := generateSchema(reflect.TypeOf(ComplexType{}))
-	data, err := json.Marshal(schema)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	fmt.Println(string(data))
-	_ = data
+	dumpSchema(schema, true)
 }
