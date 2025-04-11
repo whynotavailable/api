@@ -19,9 +19,9 @@ func TestSimpleHandler(t *testing.T) {
 	rpcContainer.AddFunction("get-hello", func(r *rpc.RpcRequest) (rpc.RpcResponse, error) {
 		body := r.Body.(rpc.SimpleMessage)
 
-		return rpc.JsonResponse(rpc.SimpleMessage{
-			Message: body.Message,
-		})
+		return rpc.Json{
+			Body: body,
+		}, nil
 	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
 
 	bodyBytes, _ := json.Marshal(rpc.SimpleMessage{
@@ -69,17 +69,21 @@ func ExampleRpcContainer_AddFunction() {
 	rpcContainer := rpc.NewRpcContainer()
 
 	rpcContainer.AddFunction("hello", func(*rpc.RpcRequest) (rpc.RpcResponse, error) {
-		return rpc.JsonResponse(map[string]string{
-			"hi": "dave",
-		})
+		return rpc.Json{
+			Body: map[string]string{
+				"hi": "dave",
+			},
+		}, nil
 	})
 
 	rpcContainer.AddFunction("hello-named", func(r *rpc.RpcRequest) (rpc.RpcResponse, error) {
 		body := r.Body.(rpc.SimpleMessage)
 
-		return rpc.JsonResponse(map[string]string{
-			"hi": body.Message,
-		})
+		return rpc.Json{
+			Body: map[string]string{
+				"hi": body.Message,
+			},
+		}, nil
 	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
 
 	rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")

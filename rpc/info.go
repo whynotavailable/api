@@ -102,8 +102,10 @@ func translateKind(kind string) string {
 func (container *RpcContainer) ServeInfo(w http.ResponseWriter) {
 	data, err := json.Marshal(container.docs)
 	if err != nil {
-		response := ErrorResponseStatus(err, http.StatusInternalServerError)
-		response.Write(w)
+		Error{
+			Err: err,
+		}.Write(w)
+		return
 	}
 	w.Write(data)
 }

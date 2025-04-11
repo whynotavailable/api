@@ -60,8 +60,10 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 			err := json.Unmarshal(data, bodyInterface)
 			if err != nil {
-				errorResponse := ErrorResponseStatus(err, http.StatusBadRequest)
-				errorResponse.Write(w)
+				Error{
+					Err:  err,
+					Code: http.StatusBadRequest,
+				}.Write(w)
 				return
 			}
 
@@ -70,8 +72,10 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 	} else {
 		if f.bodyType != nil {
-			errorResponse := ErrorResponseStatus(errors.New("body required"), http.StatusBadRequest)
-			errorResponse.Write(w)
+			Error{
+				Err:  errors.New("body required"),
+				Code: http.StatusBadRequest,
+			}.Write(w)
 			return
 		}
 	}
@@ -86,17 +90,19 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	for _, middleware := range container.middlewars {
 		err := middleware(&request)
 		if err != nil {
-			errorResponse := ErrorResponseStatus(err, http.StatusInternalServerError)
-			errorResponse.Write(w)
+			Error{
+				Err: err,
+			}.Write(w)
 			return
 		}
 	}
 
 	response, err := f.Handler(&request)
 	if err != nil {
-		// Global error handler
 		// TODO: Make this customizable
-		response = ErrorResponseStatus(err, http.StatusInternalServerError)
+		Error{
+			Err: err,
+		}.Write(w)
 	}
 
 	response.Write(w)

@@ -28,34 +28,51 @@ type RpcRequest struct {
 	Body any
 }
 
-type RpcResponse struct {
+type RpcResponse interface {
+	Write(w http.ResponseWriter)
+}
+
+type Error struct {
+	Err  error
 	Code int
-	Body []byte
 }
 
-func ErrorResponseStatus(err error, code int) RpcResponse {
-	return RpcResponse{
-		Code: code,
-		Body: []byte(err.Error()),
+func (e Error) Write(w http.ResponseWriter) {
+	if e.Code == 0 {
+		e.Code = http.StatusInternalServerError
 	}
+
+	w.WriteHeader(e.Code)
+	fmt.Fprint(w, e.Err)
 }
 
-// Helper function for json reponses
-func JsonResponse(data any) (RpcResponse, error) {
-	rawData, err := json.Marshal(data)
+type Json struct {
+	Body any
+	Code int
+}
+
+func (e Json) Write(w http.ResponseWriter) {
+	if e.Code == 0 {
+		e.Code = http.StatusOK
+	}
+
+	if e.Body == nil {
+		e.Body = map[string]string{}
+	}
+
+	data, err := json.Marshal(e.Body)
 	if err != nil {
-		return RpcResponse{}, err
+		newError := Error{
+			Err:  err,
+			Code: http.StatusBadRequest,
+		}
+		newError.Write(w)
+		return
 	}
 
-	return RpcResponse{
-		Code: http.StatusOK,
-		Body: rawData,
-	}, nil
-}
-
-func (response *RpcResponse) Write(w http.ResponseWriter) {
-	w.WriteHeader(response.Code)
-	w.Write(response.Body)
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(e.Code)
+	w.Write(data)
 }
 
 // RpcFunction is the configuration object for functions.
