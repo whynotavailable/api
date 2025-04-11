@@ -15,7 +15,7 @@ import (
 // functions
 type (
 	RpcMiddleware      func(*RpcRequest) error
-	RpcFunctionHandler func(*RpcRequest) (RpcResponse, error)
+	RpcFunctionHandler func(*RpcRequest) RpcResponse
 )
 
 type RpcRequest struct {
@@ -35,6 +35,13 @@ type RpcResponse interface {
 type Error struct {
 	Err  error
 	Code int
+}
+
+func NewError(e error) Error {
+	return Error{
+		Err:  e,
+		Code: http.StatusInternalServerError,
+	}
 }
 
 func (e Error) Write(w http.ResponseWriter) {

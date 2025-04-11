@@ -97,13 +97,7 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	response, err := f.Handler(&request)
-	if err != nil {
-		// TODO: Make this customizable
-		Error{
-			Err: err,
-		}.Write(w)
-	}
+	response := f.Handler(&request)
 
 	response.Write(w)
 }
