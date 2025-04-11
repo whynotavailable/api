@@ -36,23 +36,19 @@ func TestInfo(t *testing.T) {
 	}
 }
 
-type SimpleMessage struct {
-	Message string
-}
-
 func TestSimpleHandler(t *testing.T) {
 	messageText := "hi"
 	rpcContainer := rpc.NewRpcContainer()
 
 	rpcContainer.AddFunction("get-hello", func(r *rpc.RpcRequest) (rpc.RpcResponse, error) {
-		body := r.Body.(SimpleMessage)
+		body := r.Body.(rpc.SimpleMessage)
 
-		return rpc.JsonResponse(SimpleMessage{
+		return rpc.JsonResponse(rpc.SimpleMessage{
 			Message: body.Message,
 		})
-	}).SetBodyType(reflect.TypeOf(SimpleMessage{}))
+	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
 
-	bodyBytes, _ := json.Marshal(SimpleMessage{
+	bodyBytes, _ := json.Marshal(rpc.SimpleMessage{
 		Message: messageText,
 	})
 
@@ -72,7 +68,7 @@ func TestSimpleHandler(t *testing.T) {
 		return
 	}
 
-	result, err := utils.FancyJson[SimpleMessage](rr.Body.Bytes())
+	result, err := utils.FancyJson[rpc.SimpleMessage](rr.Body.Bytes())
 	if err != nil {
 		t.Error(err)
 		return
@@ -103,12 +99,12 @@ func ExampleRpcContainer_AddFunction() {
 	})
 
 	rpcContainer.AddFunction("hello-named", func(r *rpc.RpcRequest) (rpc.RpcResponse, error) {
-		body := r.Body.(SimpleMessage)
+		body := r.Body.(rpc.SimpleMessage)
 
 		return rpc.JsonResponse(map[string]string{
 			"hi": body.Message,
 		})
-	}).SetBodyType(reflect.TypeOf(SimpleMessage{}))
+	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
 
 	rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
 	http.ListenAndServe("0.0.0.0:3456", nil)
