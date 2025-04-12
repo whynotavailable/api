@@ -56,6 +56,20 @@ func TestSimpleHandler(t *testing.T) {
 	}
 }
 
+func TestMissingBodyType(t *testing.T) {
+	rpcContainer := rpc.NewRpcContainer()
+
+	rpcContainer.AddFunction("", func(rr *rpc.RpcRequest) rpc.RpcResponse {
+		return rpc.JsonBody("")
+	}).SetBody(true)
+
+	err := rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
+
+	if err == nil {
+		t.Error("SetupMux should have failed due to function missing type")
+	}
+}
+
 func ExampleRpcContainer() {
 	rpcContainer := rpc.NewRpcContainer()
 
