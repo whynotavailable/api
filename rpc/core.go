@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 )
@@ -22,10 +23,11 @@ type RpcRequest struct {
 	Ctx     context.Context
 	Headers map[string][]string
 	// The raw bytes from the body. Will be null if no body is sent.
-	RawBody []byte
+	RawBody io.ReadCloser
 	// Body converted to appropriate type, will only be done if body type is provided.
 	// Requires casting.
-	Body any
+	Body   any
+	Writer http.ResponseWriter
 }
 
 type RpcResponse interface {
@@ -93,11 +95,20 @@ func (e Json) Write(w http.ResponseWriter) {
 type RpcFunction struct {
 	Handler  RpcFunctionHandler
 	bodyType reflect.Type
+	setBody  bool
 }
 
 // Set the body type. If set, calls without a body, or that do not deserialize properly will return a bad request.
 func (function *RpcFunction) SetBodyType(t reflect.Type) *RpcFunction {
 	function.bodyType = t
+
+	return function
+}
+
+// Set whether or not the body will be consumed into an object.
+// You do not need to set this if you are handling the buffer yourself.
+func (function *RpcFunction) SetBody(opt bool) *RpcFunction {
+	function.setBody = opt
 
 	return function
 }
@@ -121,9 +132,16 @@ func ErrHandler(w http.ResponseWriter, err error) {
 	fmt.Fprint(w, err.Error())
 }
 
-func (container *RpcContainer) SetupMux(mux *http.ServeMux, prefix string) {
+func (container *RpcContainer) SetupMux(mux *http.ServeMux, prefix string) error {
+	for key, f := range container.functions {
+		if f.setBody && f.bodyType == nil {
+			return fmt.Errorf("function %s is configured to set a body, but no type has been set", key)
+		}
+	}
+
 	container.BuildMetadata()
 	mux.Handle(fmt.Sprintf("%s/", prefix), http.StripPrefix(prefix, container))
+	return nil
 }
 
 func (container *RpcContainer) AddFunction(key string, handler RpcFunctionHandler) *RpcFunction {

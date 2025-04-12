@@ -40,25 +40,20 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var data []byte = nil
 	var body any = nil
 
 	if r.Body != nil {
-		_data, err := io.ReadAll(r.Body)
-		if err != nil {
-			ErrHandler(w, err)
-			return
-		}
-		data = _data // This is weird because go is weird
+		if f.setBody {
+			data, err := io.ReadAll(r.Body)
+			if err != nil {
+				ErrHandler(w, err)
+				return
+			}
 
-		// INFO: This is kind of weird because of how the unmarshaller works.
-		// newObject is a container for both the value and the interface.
-		// Pulling the pointer, and changing the data underneath persists to the container
-		if f.bodyType != nil {
 			newObject := reflect.New(f.bodyType)
 			bodyInterface := newObject.Interface()
 
-			err := json.Unmarshal(data, bodyInterface)
+			err = json.Unmarshal(data, bodyInterface)
 			if err != nil {
 				Error{
 					Err:  err,
@@ -69,6 +64,9 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 			// Elem extracts the value from the pointer.
 			body = newObject.Elem().Interface()
+
+			r.Body.Close()
+			r.Body = nil
 		}
 	} else {
 		if f.bodyType != nil {
@@ -83,8 +81,9 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	request := RpcRequest{
 		Ctx:     context.Background(),
 		Headers: r.Header,
-		RawBody: data,
+		RawBody: r.Body,
 		Body:    body,
+		Writer:  w,
 	}
 
 	for _, middleware := range container.middlewars {
@@ -99,5 +98,7 @@ func (container *RpcContainer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	response := f.Handler(&request)
 
-	response.Write(w)
+	if response != nil {
+		response.Write(w)
+	}
 }

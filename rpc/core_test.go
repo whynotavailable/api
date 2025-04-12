@@ -3,6 +3,7 @@ package rpc_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -22,7 +23,7 @@ func TestSimpleHandler(t *testing.T) {
 		return rpc.Json{
 			Body: body,
 		}
-	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
+	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{})).SetBody(true)
 
 	bodyBytes, _ := json.Marshal(rpc.SimpleMessage{
 		Message: messageText,
@@ -60,27 +61,41 @@ func ExampleRpcContainer() {
 
 	// Add your stuff
 
-	rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
+	err := rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	http.ListenAndServe("0.0.0.0:3456", nil)
 }
 
 func ExampleRpcContainer_AddFunction() {
 	rpcContainer := rpc.NewRpcContainer()
 
-	rpcContainer.AddFunction("hello", func(*rpc.RpcRequest) rpc.RpcResponse {
-		return rpc.JsonBody(map[string]string{
+	// You have access to the writer directly, which you can use instead.
+	// Just return nil
+	rpcContainer.AddFunction("hello", func(r *rpc.RpcRequest) rpc.RpcResponse {
+		rpc.JsonBody(map[string]string{
 			"hi": "dave",
-		})
+		}).Write(r.Writer)
+		return nil
 	})
 
+	// Otherwise respond with anything matching rpc.RpcResponse
 	rpcContainer.AddFunction("hello-named", func(r *rpc.RpcRequest) rpc.RpcResponse {
 		body := r.Body.(rpc.SimpleMessage)
 
 		return rpc.JsonBody(map[string]string{
 			"hi": body.Message,
 		})
-	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
+	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{})).SetBody(true)
 
-	rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
+	err := rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	http.ListenAndServe("0.0.0.0:3456", nil)
 }
