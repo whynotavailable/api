@@ -58,6 +58,12 @@ type Json struct {
 	Code int
 }
 
+func JsonBody(data any) Json {
+	return Json{
+		Body: data,
+	}
+}
+
 func (e Json) Write(w http.ResponseWriter) {
 	if e.Code == 0 {
 		e.Code = http.StatusOK

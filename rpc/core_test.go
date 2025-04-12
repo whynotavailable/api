@@ -68,21 +68,17 @@ func ExampleRpcContainer_AddFunction() {
 	rpcContainer := rpc.NewRpcContainer()
 
 	rpcContainer.AddFunction("hello", func(*rpc.RpcRequest) rpc.RpcResponse {
-		return rpc.Json{
-			Body: map[string]string{
-				"hi": "dave",
-			},
-		}
+		return rpc.JsonBody(map[string]string{
+			"hi": "dave",
+		})
 	})
 
 	rpcContainer.AddFunction("hello-named", func(r *rpc.RpcRequest) rpc.RpcResponse {
 		body := r.Body.(rpc.SimpleMessage)
 
-		return rpc.Json{
-			Body: map[string]string{
-				"hi": body.Message,
-			},
-		}
+		return rpc.JsonBody(map[string]string{
+			"hi": body.Message,
+		})
 	}).SetBodyType(reflect.TypeOf(rpc.SimpleMessage{}))
 
 	rpcContainer.SetupMux(http.DefaultServeMux, "/rpc")
